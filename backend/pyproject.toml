@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "bank-account-app-backend"
+version = "0.1.0"
+description = "Backend for the Bank Account App"
+authors = ["Your Name <your.email@example.com>"]
+# Remove the packages line
+
+[tool.poetry.dependencies]
+python = "^3.9"
+fastapi = "^0.68.0"
+uvicorn = "^0.15.0"
+sqlalchemy = "^1.4.23"
+psycopg2-binary = "^2.9.1"
+pydantic = "^1.8.2"
+
+[tool.poetry.dev-dependencies]
+pytest = "^6.2.5"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
