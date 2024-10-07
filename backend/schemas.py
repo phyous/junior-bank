@@ -1,18 +1,15 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import datetime
 
-class UserBase(BaseModel):
+class UserCreate(BaseModel):
     username: str
-    name: str
-
-class UserCreate(UserBase):
     password: str
-    initial_balance: float
-    interest_rate: float
+    interest_rate: float = Field(..., ge=0, le=1)  # Interest rate between 0 and 1 (0% to 100%)
 
-class User(UserBase):
+class User(BaseModel):
     id: int
+    username: str
 
     class Config:
         orm_mode = True
@@ -21,29 +18,40 @@ class UserLogin(BaseModel):
     username: str
     password: str
 
-class AccountBase(BaseModel):
-    balance: float
-    interest_rate: float
+class AccountCreate(BaseModel):
+    user_id: int
+    balance: float = 0.0
+    interest_rate: float = 0.01
 
-class Account(AccountBase):
+class Account(BaseModel):
     id: int
     user_id: int
+    balance: float
+    interest_rate: float
+    last_interest_calculation: datetime
 
     class Config:
         orm_mode = True
 
-class TransactionBase(BaseModel):
+class TransactionCreate(BaseModel):
+    account_id: int
     amount: float
     transaction_type: str
-    note: Optional[str] = None
+    note: str = ""
 
-class TransactionCreate(TransactionBase):
-    account_id: int
-
-class Transaction(TransactionBase):
+class Transaction(BaseModel):
     id: int
     account_id: int
-    timestamp: datetime
+    amount: float
+    transaction_type: str
+    timestamp: datetime  # Change this to datetime
+    note: str
 
     class Config:
         orm_mode = True
+        json_encoders = {
+            datetime: lambda v: v.isoformat()  # Convert datetime to ISO format string
+        }
+
+class InterestRateUpdate(BaseModel):
+    interest_rate: float = Field(..., ge=0, le=1)

@@ -1,0 +1,138 @@
+.dashboard-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.dashboard-header h2 {
+  margin: 0;
+  color: #4285f4;
+}
+
+.settings-button {
+  background-color: #f1f3f4;
+  color: #4285f4;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.settings-button:hover {
+  background-color: #e8eaed;
+}
+
+.account-info {
+  background-color: #d0e3ff;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.account-info h3 {
+  margin-top: 0;
+  color: #4285f4;
+}
+
+.new-transaction-btn {
+  background-color: #4285f4;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  margin-bottom: 20px;
+}
+
+.new-transaction-btn:hover {
+  background-color: #3367d6;
+}
+
+.transactions-list h3 {
+  color: #4285f4;
+}
+
+.transactions-list table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+.transactions-list th,
+.transactions-list td {
+  text-align: left;
+  padding: 12px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.transactions-list th {
+  background-color: #f1f3f4;
+  font-weight: bold;
+  color: #4285f4;
+}
+
+.transactions-list tr:nth-child(even) {
+  background-color: #f8f9fa;
+}
+
+.transactions-list tr:hover {
+  background-color: #e8eaed;
+}
+
+@media (max-width: 600px) {
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .settings-button {
+    margin-top: 10px;
+  }
+
+  .transactions-list table,
+  .transactions-list thead,
+  .transactions-list tbody,
+  .transactions-list th,
+  .transactions-list td,
+  .transactions-list tr {
+    display: block;
+  }
+
+  .transactions-list thead tr {
+    position: absolute;
+    top: -9999px;
+    left: -9999px;
+  }
+
+  .transactions-list tr {
+    border: 1px solid #ccc;
+    margin-bottom: 10px;
+  }
+
+  .transactions-list td {
+    border: none;
+    border-bottom: 1px solid #eee;
+    position: relative;
+    padding-left: 50%;
+  }
+
+  .transactions-list td:before {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    width: 45%;
+    padding-right: 10px;
+    white-space: nowrap;
+    content: attr(data-label);
+    font-weight: bold;
+  }
+}

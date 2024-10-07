@@ -1,11 +1,17 @@
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from datetime import datetime, timedelta
+from sqlalchemy.exc import SQLAlchemyError
+from datetime import datetime, timezone, timedelta
 from typing import List
+import logging
 
 import models, schemas
 from database import SessionLocal, engine
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -26,15 +32,28 @@ def get_db():
     finally:
         db.close()
 
+@app.get("/check_username/{username}")
+def check_username(username: str, db: Session = Depends(get_db)):
+    db_user = db.query(models.User).filter(models.User.username == username).first()
+    if db_user:
+        raise HTTPException(status_code=400, detail="Username already exists")
+    return {"message": "Username is available"}
+
 @app.post("/signup", response_model=schemas.User)
 def signup(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db_user = db.query(models.User).filter(models.User.username == user.username).first()
     if db_user:
         raise HTTPException(status_code=400, detail="Username already registered")
-    new_user = models.User(**user.dict())
+    new_user = models.User(username=user.username, password=user.password)
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
+    
+    # Create an account for the new user with the specified interest rate
+    new_account = models.Account(user_id=new_user.id, balance=0.0, interest_rate=user.interest_rate)
+    db.add(new_account)
+    db.commit()
+    
     return new_user
 
 @app.post("/login", response_model=schemas.User)
@@ -49,6 +68,7 @@ def get_account(user_id: int, db: Session = Depends(get_db)):
     account = db.query(models.Account).filter(models.Account.user_id == user_id).first()
     if not account:
         raise HTTPException(status_code=404, detail="Account not found")
+    calculate_interest(account, db)
     return account
 
 @app.post("/transaction", response_model=schemas.Transaction)
@@ -63,8 +83,29 @@ def create_transaction(transaction: schemas.TransactionCreate, db: Session = Dep
 
 @app.get("/transactions/{account_id}", response_model=List[schemas.Transaction])
 def get_transactions(account_id: int, db: Session = Depends(get_db)):
-    transactions = db.query(models.Transaction).filter(models.Transaction.account_id == account_id).all()
-    return transactions
+    try:
+        logger.info(f"Fetching transactions for account_id: {account_id}")
+        account = db.query(models.Account).filter(models.Account.id == account_id).first()
+        if not account:
+            logger.warning(f"Account not found for account_id: {account_id}")
+            raise HTTPException(status_code=404, detail="Account not found")
+        
+        transactions = db.query(models.Transaction).filter(models.Transaction.account_id == account_id).all()
+        logger.info(f"Found {len(transactions)} transactions for account_id: {account_id}")
+        
+        # Convert datetime to string if necessary
+        for transaction in transactions:
+            if isinstance(transaction.timestamp, datetime):
+                transaction.timestamp = transaction.timestamp.isoformat()
+        
+        return transactions
+    except SQLAlchemyError as e:
+        logger.error(f"Database error while fetching transactions for account_id {account_id}: {str(e)}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    except Exception as e:
+        logger.error(f"Unexpected error while fetching transactions for account_id {account_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
 
 @app.post("/apply-interest")
 def apply_interest(db: Session = Depends(get_db)):
@@ -81,3 +122,37 @@ def apply_interest(db: Session = Depends(get_db)):
         db.add(transaction)
     db.commit()
     return {"message": "Interest applied successfully"}
+
+@app.put("/account/{user_id}/interest_rate")
+def update_interest_rate(user_id: int, interest_rate: schemas.InterestRateUpdate, db: Session = Depends(get_db)):
+    account = db.query(models.Account).filter(models.Account.user_id == user_id).first()
+    if not account:
+        raise HTTPException(status_code=404, detail="Account not found")
+    account.interest_rate = interest_rate.interest_rate
+    db.commit()
+    return {"message": "Interest rate updated successfully"}
+
+def calculate_interest(account: models.Account, db: Session):
+    current_time = datetime.now(timezone.utc)
+    
+    # Ensure last_interest_calculation is offset-aware
+    if account.last_interest_calculation.tzinfo is None:
+        account.last_interest_calculation = account.last_interest_calculation.replace(tzinfo=timezone.utc)
+    
+    days_since_last_calculation = (current_time - account.last_interest_calculation).days
+    
+    if days_since_last_calculation > 0:
+        interest = account.balance * (account.interest_rate / 365) * days_since_last_calculation
+        account.balance += interest
+        transaction = models.Transaction(
+            account_id=account.id,
+            amount=interest,
+            transaction_type="interest",
+            note=f"Interest for {days_since_last_calculation} days"
+        )
+        db.add(transaction)
+        account.last_interest_calculation = current_time
+        db.commit()
+    else:
+        account.last_interest_calculation = current_time
+        db.commit()

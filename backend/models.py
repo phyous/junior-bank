@@ -1,7 +1,8 @@
 from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
-from database import Base  # Change this line
-import datetime
+from database import Base
+from datetime import datetime, timezone
+from sqlalchemy.sql import func
 
 class User(Base):
     __tablename__ = "users"
@@ -9,16 +10,17 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True)
     password = Column(String)
-    accounts = relationship("Account", back_populates="user")
+    account = relationship("Account", back_populates="user", uselist=False)
 
 class Account(Base):
     __tablename__ = "accounts"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    balance = Column(Float, default=0.0)
-    interest_rate = Column(Float, default=0.01)
-    user = relationship("User", back_populates="accounts")
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True)
+    balance = Column(Float)
+    interest_rate = Column(Float)
+    last_interest_calculation = Column(DateTime(timezone=True), server_default=func.now())
+    user = relationship("User", back_populates="account")
     transactions = relationship("Transaction", back_populates="account")
 
 class Transaction(Base):
@@ -28,6 +30,6 @@ class Transaction(Base):
     account_id = Column(Integer, ForeignKey("accounts.id"))
     amount = Column(Float)
     transaction_type = Column(String)
-    timestamp = Column(DateTime, default=datetime.datetime.utcnow)
+    timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     note = Column(String, nullable=True)
     account = relationship("Account", back_populates="transactions")

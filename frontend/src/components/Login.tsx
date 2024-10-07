@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import './Login.css';
 
 interface LoginProps {
-  setIsLoggedIn: (value: boolean) => void;
-  setUserId: (value: number) => void;
+  onLogin: (id: number) => void;
 }
 
-const Login: React.FC<LoginProps> = ({ setIsLoggedIn, setUserId }) => {
+const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -17,8 +17,7 @@ const Login: React.FC<LoginProps> = ({ setIsLoggedIn, setUserId }) => {
     e.preventDefault();
     try {
       const response = await axios.post('http://localhost:8000/login', { username, password });
-      setUserId(response.data.id);
-      setIsLoggedIn(true);
+      onLogin(response.data.id);
       navigate('/dashboard');
     } catch (error) {
       setError('Invalid username or password');
@@ -28,7 +27,7 @@ const Login: React.FC<LoginProps> = ({ setIsLoggedIn, setUserId }) => {
   return (
     <div className="login-container">
       <h2>Login</h2>
-      <form onSubmit={handleSubmit}>
+      <form className="login-form" onSubmit={handleSubmit}>
         <input
           type="text"
           placeholder="Username"
@@ -45,8 +44,8 @@ const Login: React.FC<LoginProps> = ({ setIsLoggedIn, setUserId }) => {
         />
         <button type="submit">Login</button>
       </form>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      <p>
+      {error && <p className="error-message">{error}</p>}
+      <p className="signup-link">
         Don't have an account? <Link to="/signup">Sign up</Link>
       </p>
     </div>
