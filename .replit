@@ -1,0 +1,9 @@
+run = "bash build.sh"
+language = "python3"
+
+[nix]
+channel = "stable-22_11"
+
+[deployment]
+run = ["sh", "-c", "bash build.sh"]
+deploymentTarget = "cloudrun"

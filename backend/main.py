@@ -1,4 +1,5 @@
-from fastapi import FastAPI, Depends, HTTPException
+import os
+from fastapi import FastAPI, Depends, HTTPException, StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
@@ -17,6 +18,7 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
+# CORS middleware configuration
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -24,6 +26,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Mount the static files
+app.mount("/", StaticFiles(directory="frontend/build", html=True), name="static")
 
 def get_db():
     db = SessionLocal()
@@ -147,3 +152,7 @@ def apply_interest(account: models.Account, db: Session):
         
         account.last_interest_calculation = current_time
         db.commit()
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8080)

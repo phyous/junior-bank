@@ -41,7 +41,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userId, onLogout }) => {
 
   const fetchAccountData = async () => {
     try {
-      const response = await axios.get(`http://localhost:8000/account/${userId}`);
+      const response = await axios.get(`/account/${userId}`);
       setAccount(response.data);
     } catch (error) {
       console.error('Error fetching account data:', error);
@@ -51,7 +51,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userId, onLogout }) => {
   const fetchTransactions = async () => {
     if (account) {
       try {
-        const response = await axios.get(`http://localhost:8000/transactions/${account.id}`);
+        const response = await axios.get(`/transactions/${account.id}`);
         const sortedTransactions = response.data.sort((a: Transaction, b: Transaction) => 
           new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
         );
@@ -65,7 +65,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userId, onLogout }) => {
   const handleNewTransaction = async (amount: number, type: string, note: string) => {
     if (account) {
       try {
-        await axios.post('http://localhost:8000/transaction', {
+        await axios.post(`/transaction`, {
           account_id: account.id,
           amount: type === 'withdrawal' ? -amount : amount,
           transaction_type: type,
