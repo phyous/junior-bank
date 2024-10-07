@@ -68,7 +68,7 @@ def get_account(user_id: int, db: Session = Depends(get_db)):
     account = db.query(models.Account).filter(models.Account.user_id == user_id).first()
     if not account:
         raise HTTPException(status_code=404, detail="Account not found")
-    calculate_interest(account, db)
+    apply_interest(account, db)
     return account
 
 @app.post("/transaction", response_model=schemas.Transaction)
@@ -76,6 +76,7 @@ def create_transaction(transaction: schemas.TransactionCreate, db: Session = Dep
     db_transaction = models.Transaction(**transaction.dict())
     db.add(db_transaction)
     account = db.query(models.Account).filter(models.Account.id == transaction.account_id).first()
+    apply_interest(account, db)  # Apply interest before updating balance
     account.balance += transaction.amount
     db.commit()
     db.refresh(db_transaction)
@@ -89,6 +90,8 @@ def get_transactions(account_id: int, db: Session = Depends(get_db)):
         if not account:
             logger.warning(f"Account not found for account_id: {account_id}")
             raise HTTPException(status_code=404, detail="Account not found")
+        
+        apply_interest(account, db)  # Apply interest before fetching transactions
         
         transactions = db.query(models.Transaction).filter(models.Transaction.account_id == account_id).all()
         logger.info(f"Found {len(transactions)} transactions for account_id: {account_id}")
@@ -107,32 +110,17 @@ def get_transactions(account_id: int, db: Session = Depends(get_db)):
         logger.error(f"Unexpected error while fetching transactions for account_id {account_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
 
-@app.post("/apply-interest")
-def apply_interest(db: Session = Depends(get_db)):
-    accounts = db.query(models.Account).all()
-    for account in accounts:
-        interest = account.balance * (account.interest_rate / 365)
-        account.balance += interest
-        transaction = models.Transaction(
-            account_id=account.id,
-            amount=interest,
-            transaction_type="interest",
-            note="Daily interest"
-        )
-        db.add(transaction)
-    db.commit()
-    return {"message": "Interest applied successfully"}
-
 @app.put("/account/{user_id}/interest_rate")
 def update_interest_rate(user_id: int, interest_rate: schemas.InterestRateUpdate, db: Session = Depends(get_db)):
     account = db.query(models.Account).filter(models.Account.user_id == user_id).first()
     if not account:
         raise HTTPException(status_code=404, detail="Account not found")
+    apply_interest(account, db)  # Apply interest before updating rate
     account.interest_rate = interest_rate.interest_rate
     db.commit()
     return {"message": "Interest rate updated successfully"}
 
-def calculate_interest(account: models.Account, db: Session):
+def apply_interest(account: models.Account, db: Session):
     current_time = datetime.now(timezone.utc)
     
     # Ensure last_interest_calculation is offset-aware
@@ -142,17 +130,20 @@ def calculate_interest(account: models.Account, db: Session):
     days_since_last_calculation = (current_time - account.last_interest_calculation).days
     
     if days_since_last_calculation > 0:
-        interest = account.balance * (account.interest_rate / 365) * days_since_last_calculation
-        account.balance += interest
-        transaction = models.Transaction(
-            account_id=account.id,
-            amount=interest,
-            transaction_type="interest",
-            note=f"Interest for {days_since_last_calculation} days"
-        )
-        db.add(transaction)
-        account.last_interest_calculation = current_time
-        db.commit()
-    else:
+        for day in range(days_since_last_calculation):
+            interest_date = account.last_interest_calculation + timedelta(days=day+1)
+            daily_interest = account.balance * (account.interest_rate / 365)
+            account.balance += daily_interest
+            
+            # Create a transaction for the daily interest
+            transaction = models.Transaction(
+                account_id=account.id,
+                amount=daily_interest,
+                transaction_type="interest",
+                timestamp=interest_date,
+                note=f"Daily interest for {interest_date.date()}"
+            )
+            db.add(transaction)
+        
         account.last_interest_calculation = current_time
         db.commit()

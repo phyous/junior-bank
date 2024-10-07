@@ -31,15 +31,29 @@
 }
 
 .account-info {
-  background-color: #d0e3ff;
-  padding: 20px;
+  background-color: #f0f8ff;
   border-radius: 8px;
+  padding: 20px;
   margin-bottom: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .account-info h3 {
-  margin-top: 0;
-  color: #4285f4;
+  margin: 0;
+  color: #4a4a4a;
+  font-size: 1.2rem;
+}
+
+.balance-amount {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #1976d2;
+  margin: 10px 0;
+}
+
+.account-info p {
+  margin: 5px 0 0;
+  color: #666;
 }
 
 .new-transaction-btn {

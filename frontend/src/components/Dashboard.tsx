@@ -103,7 +103,8 @@ const Dashboard: React.FC<DashboardProps> = ({ userId, onLogout }) => {
       </div>
       {account && (
         <div className="account-info">
-          <h3>Account Balance: ${account.balance.toFixed(2)}</h3>
+          <h3>Account Balance</h3>
+          <div className="balance-amount">${account.balance.toFixed(2)}</div>
           <p>Interest Rate: {(account.interest_rate * 100).toFixed(2)}%</p>
         </div>
       )}
