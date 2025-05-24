@@ -20,7 +20,7 @@ const Signup: React.FC<SignupProps> = ({ onSignup }) => {
     if (username && password) {
       try {
         // Check if username already exists
-        await axios.get(`http://localhost:8000/check_username/${username}`);
+        await axios.get(`${process.env.REACT_APP_API_BASE_URL}/check_username/${username}`);
         setStep(2);
       } catch (error: any) {
         if (error.response && error.response.status === 400) {
@@ -37,7 +37,7 @@ const Signup: React.FC<SignupProps> = ({ onSignup }) => {
   const handleFinalSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await axios.post('http://localhost:8000/signup', {
+      const response = await axios.post(`${process.env.REACT_APP_API_BASE_URL}/signup`, {
         username,
         password,
         interest_rate: parseFloat(interestRate) / 100,

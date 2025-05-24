@@ -18,7 +18,7 @@ const Settings: React.FC<SettingsProps> = ({ userId }) => {
 
   const fetchAccountData = async () => {
     try {
-      const response = await axios.get(`http://localhost:8000/account/${userId}`);
+      const response = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/account/${userId}`);
       setInterestRate((response.data.interest_rate * 100).toFixed(2));
     } catch (error) {
       console.error('Error fetching account data:', error);
@@ -28,7 +28,7 @@ const Settings: React.FC<SettingsProps> = ({ userId }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await axios.put(`http://localhost:8000/account/${userId}/interest_rate`, {
+      await axios.put(`${process.env.REACT_APP_API_BASE_URL}/account/${userId}/interest_rate`, {
         interest_rate: parseFloat(interestRate) / 100,
       });
       navigate('/dashboard');
